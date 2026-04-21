@@ -71,6 +71,7 @@ function ensureRoom(roomId) {
       puck: createInitialPuck(),
       gameState: null,
       matchStarted: false,
+      paused: false,
     });
   }
   return rooms.get(roomId);
@@ -80,6 +81,7 @@ function serializeGameState(roomId, room) {
   return {
     roomId,
     matchStarted: room.matchStarted,
+    paused: room.paused,
     readyPlayers: room.players.size,
     paddles: Array.from(room.players.entries()).map(([playerId, player]) => ({
       playerId,
@@ -113,16 +115,26 @@ function resetPuck(room) {
   };
 }
 
+function clampPlayerPosition(player, nextX, nextY) {
+  const minY = player.side === 'top' ? 40 : CANVAS_HEIGHT / 2 + 10;
+  const maxY = player.side === 'top' ? CANVAS_HEIGHT / 2 - 10 : CANVAS_HEIGHT - 40;
+
+  player.x = Math.max(40, Math.min(CANVAS_WIDTH - 40, nextX));
+  player.y = Math.max(minY, Math.min(maxY, nextY));
+}
+
 function updateMatchStartState(room) {
   const shouldStart = room.players.size >= 2;
   if (shouldStart && !room.matchStarted) {
     room.matchStarted = true;
+    room.paused = false;
     resetPuck(room);
     return;
   }
 
   if (!shouldStart) {
     room.matchStarted = false;
+    room.paused = false;
     room.puck = {
       x: CANVAS_WIDTH / 2,
       y: CANVAS_HEIGHT / 2,
@@ -136,7 +148,7 @@ function updateMatchStartState(room) {
 function updateRoom(roomId, room) {
   if (!room.hostSocketId) return;
   updateMatchStartState(room);
-  if (!room.matchStarted) {
+  if (!room.matchStarted || room.paused) {
     broadcastGameState(roomId, room);
     return;
   }
@@ -345,19 +357,24 @@ io.on('connection', (socket) => {
     io.emit('rooms:list', { rooms: serializeRooms() });
   });
 
-  socket.on('controller:move', ({ roomId, ax = 0, ay = 0, ts }) => {
+  socket.on('controller:move', ({ roomId, ax = 0, ay = 0, x, y, ts }) => {
     const room = rooms.get(roomId);
     if (!room || !room.hostSocketId || !room.players.has(socket.id)) return;
+    if (room.paused) return;
 
     const player = room.players.get(socket.id);
-    const gain = 52;
-    player.x += Math.max(-1, Math.min(1, ax / 5)) * gain;
-    player.y += Math.max(-1, Math.min(1, ay / 5)) * gain;
+    const hasAbsoluteTarget = Number.isFinite(x) && Number.isFinite(y);
 
-    const minY = player.side === 'top' ? 40 : CANVAS_HEIGHT / 2 + 10;
-    const maxY = player.side === 'top' ? CANVAS_HEIGHT / 2 - 10 : CANVAS_HEIGHT - 40;
-    player.x = Math.max(40, Math.min(CANVAS_WIDTH - 40, player.x));
-    player.y = Math.max(minY, Math.min(maxY, player.y));
+    if (hasAbsoluteTarget) {
+      clampPlayerPosition(player, x, y);
+    } else {
+      const gain = 52;
+      clampPlayerPosition(
+        player,
+        player.x + Math.max(-1, Math.min(1, ax / 5)) * gain,
+        player.y + Math.max(-1, Math.min(1, ay / 5)) * gain,
+      );
+    }
 
     io.to(room.hostSocketId).emit('host:player_move', {
       playerId: socket.id,
@@ -365,6 +382,14 @@ io.on('connection', (socket) => {
       ay,
       ts: ts || Date.now(),
     });
+    broadcastGameState(roomId, room);
+  });
+
+  socket.on('controller:toggle_pause', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.hostSocketId || !room.players.has(socket.id) || !room.matchStarted) return;
+
+    room.paused = !room.paused;
     broadcastGameState(roomId, room);
   });
 

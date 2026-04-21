@@ -7,6 +7,7 @@ const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 1280;
 const DEFAULT_STATE = {
   matchStarted: false,
+  paused: false,
   readyPlayers: 0,
   paddles: [],
   puck: {
@@ -180,7 +181,11 @@ export default function SpectatorPage() {
         <div className={styles.badge}>Sala: {joinedRoom || '---'}</div>
         <div className={styles.badge}>Placar: {score.top} x {score.bottom}</div>
         <div className={styles.badge}>
-          {renderState.matchStarted ? 'Partida em andamento' : `Aguardando jogadores (${renderState.readyPlayers}/2)`}
+          {renderState.matchStarted
+            ? renderState.paused
+              ? 'Partida pausada'
+              : 'Partida em andamento'
+            : `Aguardando jogadores (${renderState.readyPlayers}/2)`}
         </div>
         <div className={styles.badge}>Modo: espectador</div>
         <p className={statusOk ? styles.joinUrl : styles.joinUrl}>{status}</p>

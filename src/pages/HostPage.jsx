@@ -7,6 +7,7 @@ const CANVAS_WIDTH = 720;
 const CANVAS_HEIGHT = 1280;
 const DEFAULT_STATE = {
   matchStarted: false,
+  paused: false,
   readyPlayers: 0,
   paddles: [],
   puck: {
@@ -30,6 +31,7 @@ export default function HostPage() {
   const [spectatorUrl, setSpectatorUrl] = useState('');
   const [players, setPlayers] = useState(0);
   const [matchStarted, setMatchStarted] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -73,6 +75,7 @@ export default function HostPage() {
       setScore({ top: 0, bottom: 0 });
       setPlayers(0);
       setMatchStarted(false);
+      setPaused(false);
       setLastInput('conectado');
       socket.emit('host:create_room');
     });
@@ -104,6 +107,7 @@ export default function HostPage() {
       renderStateRef.current = state || DEFAULT_STATE;
       setPlayers(state?.readyPlayers ?? (state?.paddles || []).length);
       setMatchStarted(Boolean(state?.matchStarted));
+      setPaused(Boolean(state?.paused));
       if (nextScore) {
         setScore(nextScore);
       }
@@ -181,7 +185,9 @@ export default function HostPage() {
         <div className={styles.badge}>Sala: {roomId}</div>
         <div className={styles.badge}>Jogadores: {players}</div>
         <div className={styles.badge}>Placar: {score.top} x {score.bottom}</div>
-        <div className={styles.badge}>{matchStarted ? 'Partida em andamento' : 'Aguardando 2 jogadores'}</div>
+        <div className={styles.badge}>
+          {matchStarted ? (paused ? 'Partida pausada' : 'Partida em andamento') : 'Aguardando 2 jogadores'}
+        </div>
         <div className={styles.badge}>Input: {lastInput}</div>
         <p className={styles.joinUrl}>{joinUrl}</p>
         <p className={styles.joinUrl}>{spectatorUrl}</p>
