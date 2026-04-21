@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Host - Super Air Hockey MVP</title>
+    <style>
+      body { margin: 0; background: #0c1222; color: #e7ecf3; font-family: Arial, sans-serif; }
+      .topbar { padding: .75rem 1rem; background: #111a30; display:flex; gap:1rem; align-items:center; }
+      .badge { background:#1f2a44; padding:.3rem .55rem; border-radius:8px; }
+      canvas { display: block; width: 100vw; height: calc(100vh - 56px); background: radial-gradient(circle at center, #1b2a4a, #0c1222); }
+      small { opacity:.85; }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="badge">Sala: <strong id="room">---</strong></div>
+      <div class="badge">Jogadores: <strong id="players">0</strong></div>
+      <div class="badge">Placar: <strong id="score">0 x 0</strong></div>
+      <small id="joinUrl"></small>
+    </div>
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const roomEl = document.getElementById('room');
+      const playersEl = document.getElementById('players');
+      const scoreEl = document.getElementById('score');
+      const joinUrlEl = document.getElementById('joinUrl');
+
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const paddles = new Map();
+      const puck = { x: canvas.width / 2, y: canvas.height / 2, vx: 5, vy: 3, r: 14 };
+      let roomId = null;
+      let score = { left: 0, right: 0 };
+
+      function drawTable() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#5a6d9a';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 30);
+        ctx.lineTo(canvas.width / 2, canvas.height - 30);
+        ctx.stroke();
+      }
+
+      function drawPaddles() {
+        for (const [, p] of paddles) {
+          ctx.beginPath();
+          ctx.fillStyle = p.side === 'left' ? '#5eead4' : '#f472b6';
+          ctx.arc(p.x, p.y, 36, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawPuck() {
+        ctx.beginPath();
+        ctx.fillStyle = '#fff';
+        ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function updatePuck() {
+        puck.x += puck.vx;
+        puck.y += puck.vy;
+
+        if (puck.y < 44 || puck.y > canvas.height - 44) puck.vy *= -1;
+
+        for (const [, p] of paddles) {
+          const dx = puck.x - p.x;
+          const dy = puck.y - p.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < puck.r + 36) {
+            const nx = dx / (dist || 1);
+            const ny = dy / (dist || 1);
+            const speed = Math.hypot(puck.vx, puck.vy) + 0.35;
+            puck.vx = nx * speed;
+            puck.vy = ny * speed;
+          }
+        }
+
+        if (puck.x < 10) {
+          score.right += 1;
+          socket.emit('host:goal', { roomId, side: 'right' });
+          resetPuck();
+        }
+        if (puck.x > canvas.width - 10) {
+          score.left += 1;
+          socket.emit('host:goal', { roomId, side: 'left' });
+          resetPuck();
+        }
+
+        scoreEl.textContent = `${score.left} x ${score.right}`;
+      }
+
+      function resetPuck() {
+        puck.x = canvas.width / 2;
+        puck.y = canvas.height / 2;
+        puck.vx = (Math.random() > 0.5 ? 1 : -1) * 5;
+        puck.vy = (Math.random() > 0.5 ? 1 : -1) * 3;
+      }
+
+      function loop() {
+        drawTable();
+        updatePuck();
+        drawPaddles();
+        drawPuck();
+        requestAnimationFrame(loop);
+      }
+
+      socket.emit('host:create_room');
+
+      socket.on('room:created', ({ roomId: id }) => {
+        roomId = id;
+        roomEl.textContent = roomId;
+        const joinUrl = `${location.origin}/controller.html?room=${roomId}`;
+        joinUrlEl.textContent = `Entrada: ${joinUrl}`;
+      });
+
+      socket.on('host:player_joined', ({ playerId, side }) => {
+        paddles.set(playerId, {
+          side,
+          x: side === 'left' ? canvas.width * 0.2 : canvas.width * 0.8,
+          y: canvas.height * 0.5,
+        });
+        playersEl.textContent = String(paddles.size);
+      });
+
+      socket.on('host:player_move', ({ playerId, ax, ay }) => {
+        const p = paddles.get(playerId);
+        if (!p) return;
+
+        const gain = 12;
+        p.x += Math.max(-1, Math.min(1, ax / 5)) * gain;
+        p.y += Math.max(-1, Math.min(1, ay / 5)) * gain;
+
+        const minX = p.side === 'left' ? 40 : canvas.width / 2 + 10;
+        const maxX = p.side === 'left' ? canvas.width / 2 - 10 : canvas.width - 40;
+        p.x = Math.max(minX, Math.min(maxX, p.x));
+        p.y = Math.max(40, Math.min(canvas.height - 40, p.y));
+      });
+
+      socket.on('host:player_left', ({ playerId }) => {
+        paddles.delete(playerId);
+        playersEl.textContent = String(paddles.size);
+      });
+
+      socket.on('game:score', ({ score: nextScore }) => {
+        score = nextScore;
+        scoreEl.textContent = `${score.left} x ${score.right}`;
+      });
+
+      loop();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Super Air Hockey MVP</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
+      a.button { display: inline-block; margin-top: .75rem; text-decoration: none; background: #101828; color: #fff; padding: .5rem .8rem; border-radius: 8px; }
+      code { background:#f5f5f5; padding:.15rem .35rem; border-radius:4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Super Air Hockey — MVP Local</h1>
+    <p>Use a TV/desktop como host e celulares como controles na mesma rede Wi‑Fi.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Host (TV)</h3>
+        <p>Cria sala e renderiza a partida.</p>
+        <a class="button" href="/host.html">Abrir Host</a>
+      </div>
+      <div class="card">
+        <h3>Controller (Mobile)</h3>
+        <p>Use <code>?room=ABCDE</code> para entrar direto em uma sala.</p>
+        <a class="button" href="/controller.html">Abrir Controle</a>
+      </div>
+    </div>
+  </body>
+</html>
