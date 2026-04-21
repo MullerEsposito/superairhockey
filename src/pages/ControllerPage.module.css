@@ -1,0 +1,149 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.card {
+  width: min(100%, 430px);
+  padding: 1.5rem;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(16, 24, 40, 0.78);
+  box-shadow: 0 20px 60px rgba(8, 15, 30, 0.28);
+}
+
+.title {
+  margin-top: 0;
+  margin-bottom: 0.6rem;
+}
+
+.mutedCopy {
+  color: #94a3b8;
+}
+
+.fieldLabel {
+  display: block;
+  margin-top: 0.85rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.field,
+.primaryButton,
+.secondaryButton,
+.toggleOff,
+.toggleOn {
+  width: 100%;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  font: inherit;
+}
+
+.field {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  margin-top: 0.35rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.toggleOff,
+.toggleOn {
+  cursor: pointer;
+  color: #e7ecf3;
+}
+
+.primaryButton {
+  margin-top: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+
+.secondaryButton,
+.toggleOff,
+.toggleOn {
+  border: none;
+}
+
+.secondaryButton,
+.toggleOff {
+  background: linear-gradient(135deg, #334155, #475569);
+}
+
+.toggleOn {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+}
+
+.okCopy {
+  color: #4ade80;
+}
+
+.errCopy {
+  color: #f87171;
+}
+
+.gameShell {
+  width: min(100%, 420px);
+  min-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sensitivityPanel {
+  width: 100%;
+  padding: 0.95rem 1rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.sensitivityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
+}
+
+.sensitivitySlider {
+  width: 100%;
+  accent-color: #5eead4;
+}
+
+.roomChip {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.paddleStage {
+  width: min(82vw, 320px);
+  height: min(82vw, 320px);
+  border-radius: 28px;
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.46), rgba(191, 219, 254, 0.82)),
+    linear-gradient(145deg, #dbeafe, #bfdbfe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paddleDot {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f172a, #111827);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.28);
+}
+
+@media (max-width: 720px) {
+  .card {
+    padding: 1.2rem;
+  }
+}

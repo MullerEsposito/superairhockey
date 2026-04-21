@@ -6,11 +6,24 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js",
+    "dev": "node --watch server.js",
+    "client:dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "certs": "powershell.exe -ExecutionPolicy Bypass -File scripts/generate-dev-cert.ps1",
+    "cloudflare:quick": "powershell.exe -ExecutionPolicy Bypass -File scripts/start-cloudflare-tunnel.ps1",
+    "cloudflare:stop": "powershell.exe -ExecutionPolicy Bypass -File scripts/stop-cloudflare-tunnel.ps1",
     "lint": "node --check server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.8.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.10"
   }
 }
