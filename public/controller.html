@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Controle - Super Air Hockey MVP</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 480px; margin: 1.2rem auto; padding: 0 1rem; }
+      input, button { width: 100%; padding: .7rem; margin-top: .5rem; }
+      button { border: 0; background: #111827; color: #fff; border-radius: 8px; }
+      .ok { color: #0a7f36; }
+      .err { color: #b42318; }
+    </style>
+  </head>
+  <body>
+    <h2>Controle (Celular)</h2>
+    <label>Sala</label>
+    <input id="room" placeholder="ABCDE" />
+    <label>Nome</label>
+    <input id="name" placeholder="Jogador" />
+    <button id="join">Entrar e iniciar sensores</button>
+    <p id="status"></p>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const roomInput = document.getElementById('room');
+      const nameInput = document.getElementById('name');
+      const joinButton = document.getElementById('join');
+      const status = document.getElementById('status');
+      const queryRoom = new URLSearchParams(location.search).get('room');
+      if (queryRoom) roomInput.value = queryRoom;
+
+      let joinedRoom = null;
+
+      function setStatus(text, ok = true) {
+        status.textContent = text;
+        status.className = ok ? 'ok' : 'err';
+      }
+
+      async function requestMotionPermissionIfNeeded() {
+        if (typeof DeviceMotionEvent === 'undefined') return true;
+        if (typeof DeviceMotionEvent.requestPermission !== 'function') return true;
+
+        try {
+          const response = await DeviceMotionEvent.requestPermission();
+          return response === 'granted';
+        } catch {
+          return false;
+        }
+      }
+
+      function bindMotion() {
+        const deadzone = 0.15;
+        window.addEventListener('devicemotion', (event) => {
+          if (!joinedRoom) return;
+          const a = event.accelerationIncludingGravity || { x: 0, y: 0 };
+          const ax = Math.abs(a.x) < deadzone ? 0 : a.x;
+          const ay = Math.abs(a.y) < deadzone ? 0 : a.y;
+          socket.emit('controller:move', {
+            roomId: joinedRoom,
+            ts: Date.now(),
+            ax,
+            ay,
+          });
+        });
+      }
+
+      joinButton.addEventListener('click', async () => {
+        const roomId = roomInput.value.trim().toUpperCase();
+        const playerName = nameInput.value.trim() || 'Jogador';
+
+        if (!roomId) {
+          setStatus('Informe o código da sala.', false);
+          return;
+        }
+
+        const permission = await requestMotionPermissionIfNeeded();
+        if (!permission) {
+          setStatus('Permissão de movimento negada.', false);
+          return;
+        }
+
+        socket.emit('controller:join_room', { roomId, playerName });
+      });
+
+      socket.on('controller:joined', ({ roomId, side }) => {
+        joinedRoom = roomId;
+        setStatus(`Conectado na sala ${roomId} (${side}).`);
+        bindMotion();
+      });
+
+      socket.on('controller:error', ({ message }) => {
+        setStatus(message, false);
+      });
+
+      socket.on('game:ended', () => {
+        joinedRoom = null;
+        setStatus('Host desconectou. Partida encerrada.', false);
+      });
+    </script>
+  </body>
+</html>
